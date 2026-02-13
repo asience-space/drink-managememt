@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id           Int      @id @default(autoincrement())
+  employeeCode String   @unique @map("employee_code")
+  name         String
+  role         String   @default("user")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  transactions    Transaction[]
+  stockEntries    StockEntry[]
+  inventoryChecks InventoryCheck[]
+
+  @@map("employees")
+}
+
+model Drink {
+  id         Int      @id @default(autoincrement())
+  name       String
+  imageUrl   String?  @map("image_url")
+  stock      Int      @default(0)
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  transactions    Transaction[]
+  stockEntries    StockEntry[]
+  inventoryChecks InventoryCheck[]
+
+  @@map("drinks")
+}
+
+model Transaction {
+  id           Int      @id @default(autoincrement())
+  employeeId   Int      @map("employee_id")
+  drinkId      Int      @map("drink_id")
+  quantity     Int
+  customerName String?  @map("customer_name")
+  source       String   @default("manual")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  drink    Drink    @relation(fields: [drinkId], references: [id])
+
+  @@index([createdAt])
+  @@index([employeeId])
+  @@index([drinkId])
+  @@map("transactions")
+}
+
+model StockEntry {
+  id         Int      @id @default(autoincrement())
+  employeeId Int      @map("employee_id")
+  drinkId    Int      @map("drink_id")
+  quantity   Int
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  drink    Drink    @relation(fields: [drinkId], references: [id])
+
+  @@index([createdAt])
+  @@map("stock_entries")
+}
+
+model InventoryCheck {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int      @map("employee_id")
+  drinkId     Int      @map("drink_id")
+  systemStock Int      @map("system_stock")
+  actualStock Int      @map("actual_stock")
+  diff        Int
+  checkType   String   @default("manual") @map("check_type")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+  drink    Drink    @relation(fields: [drinkId], references: [id])
+
+  @@index([createdAt])
+  @@map("inventory_checks")
+}
+
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+}
