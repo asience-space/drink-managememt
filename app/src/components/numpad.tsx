@@ -11,7 +11,7 @@ interface NumpadProps {
 export function Numpad({
   value,
   onChange,
-  maxLength = 4,
+  maxLength = 8,
   onSubmit,
   submitLabel = "ログイン",
 }: NumpadProps) {
@@ -39,9 +39,9 @@ export function Numpad({
   return (
     <div className="flex flex-col items-center gap-6">
       {/* Display area */}
-      <div className="flex items-center justify-center h-16 min-w-[200px] rounded-xl bg-white border-2 border-[var(--color-border)] px-6">
+      <div className="flex items-center justify-center h-16 min-w-[280px] rounded-xl bg-white border-2 border-[var(--color-border)] px-6">
         {value.length > 0 ? (
-          <span className="text-3xl font-bold tracking-[0.5em] text-[var(--color-text)]">
+          <span className="text-2xl font-bold tracking-[0.3em] text-[var(--color-text)]">
             {value}
           </span>
         ) : (

@@ -150,7 +150,7 @@ export default function EmployeesManagementPage() {
 
   const downloadTemplate = () => {
     const bom = "\uFEFF";
-    const csv = bom + "社員番号,氏名,権限\n0001,山田太郎,一般\n0002,鈴木花子,管理者\n";
+    const csv = bom + "社員番号,氏名,権限\n00000001,山田太郎,一般\n00000002,鈴木花子,管理者\n";
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -189,7 +189,7 @@ export default function EmployeesManagementPage() {
             <p className="font-medium text-gray-700 mb-2">CSVフォーマット</p>
             <p className="mb-1">ヘッダー行（1行目）に以下の列名を含めてください:</p>
             <ul className="list-disc list-inside ml-2 mb-2 space-y-0.5">
-              <li><span className="font-mono bg-white px-1 rounded">社員番号</span> （必須・最大10文字）</li>
+              <li><span className="font-mono bg-white px-1 rounded">社員番号</span> （必須・8桁）</li>
               <li><span className="font-mono bg-white px-1 rounded">氏名</span> （必須・最大100文字）</li>
               <li><span className="font-mono bg-white px-1 rounded">権限</span> （任意・「管理者」or「一般」。省略時は一般）</li>
             </ul>
@@ -263,7 +263,7 @@ export default function EmployeesManagementPage() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">社員番号</label>
               <input type="text" value={form.employeeCode} onChange={(e) => setForm({ ...form, employeeCode: e.target.value })}
-                disabled={!!editId} maxLength={10}
+                disabled={!!editId} maxLength={8}
                 className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100" />
             </div>
             <div>

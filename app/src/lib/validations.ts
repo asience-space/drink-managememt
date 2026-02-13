@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  employeeCode: z.string().min(1).max(10),
+  employeeCode: z.string().min(1).max(8),
 });
 
 export const transactionSchema = z.object({
@@ -33,7 +33,7 @@ export const drinkSchema = z.object({
 });
 
 export const employeeSchema = z.object({
-  employeeCode: z.string().min(1).max(10),
+  employeeCode: z.string().min(1).max(8),
   name: z.string().min(1).max(100),
   role: z.enum(["admin", "user"]).optional(),
 });

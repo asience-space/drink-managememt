@@ -116,7 +116,7 @@ export default function LoginPage() {
           <Numpad
             value={employeeCode}
             onChange={setEmployeeCode}
-            maxLength={4}
+            maxLength={8}
             onSubmit={handleSubmit}
             submitLabel={isSubmitting ? "..." : "ログイン"}
           />

@@ -55,8 +55,8 @@ function parseCsvContent(text: string): { rows: CsvRow[]; errors: string[] } {
       continue;
     }
 
-    if (code.length > 10) {
-      errors.push(`${i + 1}行目: 社員番号が10文字を超えています（${code}）`);
+    if (code.length > 8) {
+      errors.push(`${i + 1}行目: 社員番号が8桁を超えています（${code}）`);
       continue;
     }
 

@@ -4,15 +4,15 @@ const prisma = new PrismaClient();
 
 async function main() {
   await prisma.employee.upsert({
-    where: { employeeCode: "0001" },
+    where: { employeeCode: "00000001" },
     update: {},
-    create: { employeeCode: "0001", name: "管理者", role: "admin" },
+    create: { employeeCode: "00000001", name: "管理者", role: "admin" },
   });
 
   await prisma.employee.upsert({
-    where: { employeeCode: "0002" },
+    where: { employeeCode: "00000002" },
     update: {},
-    create: { employeeCode: "0002", name: "佐藤太郎", role: "user" },
+    create: { employeeCode: "00000002", name: "佐藤太郎", role: "user" },
   });
 
   const drinks = [
