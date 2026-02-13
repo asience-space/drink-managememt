@@ -109,15 +109,32 @@ export default function StockInPage() {
             <label className="block text-sm font-medium text-gray-600 mb-1">数量</label>
             <div className="flex items-center gap-4">
               <button
+                type="button"
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 disabled={quantity <= 1}
-                className="w-14 h-14 rounded-lg bg-gray-100 text-2xl font-bold hover:bg-gray-200 disabled:opacity-40"
+                className="w-14 h-14 rounded-lg bg-gray-100 text-2xl font-bold hover:bg-gray-200 disabled:opacity-40 cursor-pointer"
               >−</button>
-              <span className="text-3xl font-bold w-16 text-center">{quantity}</span>
+              <input
+                type="number"
+                min={1}
+                max={999}
+                value={quantity}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (!isNaN(v) && v >= 1 && v <= 999) {
+                    setQuantity(v);
+                  } else if (e.target.value === "") {
+                    setQuantity(1);
+                  }
+                }}
+                onFocus={(e) => e.target.select()}
+                className="text-3xl font-bold w-24 text-center border-2 border-gray-200 rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
               <button
-                onClick={() => setQuantity((q) => Math.min(99, q + 1))}
-                disabled={quantity >= 99}
-                className="w-14 h-14 rounded-lg bg-gray-100 text-2xl font-bold hover:bg-gray-200 disabled:opacity-40"
+                type="button"
+                onClick={() => setQuantity((q) => Math.min(999, q + 1))}
+                disabled={quantity >= 999}
+                className="w-14 h-14 rounded-lg bg-gray-100 text-2xl font-bold hover:bg-gray-200 disabled:opacity-40 cursor-pointer"
               >+</button>
             </div>
           </div>
