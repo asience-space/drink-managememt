@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { transactionSchema } from "@/lib/validations";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
+import { checkLowStockAndNotify } from "@/lib/notifications";
 
 export async function GET(request: NextRequest) {
   try {
@@ -132,6 +133,11 @@ export async function POST(request: NextRequest) {
         },
       }),
     ]);
+
+    // Check low stock after takeout (non-blocking)
+    if (!isReturn) {
+      checkLowStockAndNotify(drinkId, updatedDrink.stock).catch(() => {});
+    }
 
     return NextResponse.json(
       { ...transaction, drink: { ...transaction.drink, stock: updatedDrink.stock } },

@@ -139,6 +139,13 @@ export default function DrinksPage() {
           ようこそ {employee?.name}さん
         </h1>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.push("/stats")}
+            className="px-3 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-gray-200 transition-colors cursor-pointer"
+          >
+            統計
+          </button>
           {isAdmin && (
             <button
               type="button"

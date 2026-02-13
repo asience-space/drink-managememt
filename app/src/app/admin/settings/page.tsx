@@ -11,6 +11,7 @@ interface SettingField {
 
 const fields: SettingField[] = [
   { key: "notification_webhook_url", label: "Google Chat Webhook URL", type: "text", placeholder: "https://chat.googleapis.com/v1/spaces/..." },
+  { key: "low_stock_threshold", label: "在庫低下通知閾値（本）", type: "number", placeholder: "3" },
   { key: "inventory_check_reminder", label: "棚卸しリマインダー時刻", type: "text", placeholder: "09:00,18:00" },
   { key: "lockout_max_attempts", label: "ロックアウト最大試行回数", type: "number" },
   { key: "lockout_duration_minutes", label: "ロックアウト時間（分）", type: "number" },

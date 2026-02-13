@@ -31,3 +31,45 @@ export async function sendInventoryAlert(
     return false;
   }
 }
+
+export async function checkLowStockAndNotify(
+  drinkId: number,
+  newStock: number
+): Promise<boolean> {
+  // Get threshold setting
+  const thresholdSetting = await prisma.setting.findUnique({
+    where: { key: "low_stock_threshold" },
+  });
+  const threshold = thresholdSetting ? parseInt(thresholdSetting.value, 10) : 0;
+  if (threshold <= 0 || newStock > threshold) return false;
+
+  // Get webhook URL
+  const webhookSetting = await prisma.setting.findUnique({
+    where: { key: "notification_webhook_url" },
+  });
+  if (!webhookSetting?.value) return false;
+
+  // Get drink name
+  const drink = await prisma.drink.findUnique({
+    where: { id: drinkId },
+    select: { name: true },
+  });
+  if (!drink) return false;
+
+  const now = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+  const urgency = newStock === 0 ? "🚨" : "⚠️";
+  const stockText = newStock === 0 ? "*在庫切れ*" : `残り *${newStock}本*（閾値: ${threshold}本）`;
+  const text = `${urgency} *在庫低下アラート*\n日時: ${now}\n\nドリンク: *${drink.name}*\n${stockText}\n\n補充をお願いします。`;
+
+  try {
+    await fetch(webhookSetting.value, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    return true;
+  } catch {
+    console.error("Failed to send low stock notification");
+    return false;
+  }
+}
