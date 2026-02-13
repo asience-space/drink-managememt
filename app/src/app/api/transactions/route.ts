@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
     const { drinkId, quantity, type, customerName } = parsed.data;
     const isReturn = type === "return";
 
+    // ドリンクの存在チェック
     const drink = await prisma.drink.findUnique({
       where: { id: drinkId },
     });
@@ -102,16 +103,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Drink not found" }, { status: 404 });
     }
 
-    // 取り出し時のみ在庫チェック
-    if (!isReturn && drink.stock < quantity) {
-      return NextResponse.json(
-        { error: "Insufficient stock", currentStock: drink.stock },
-        { status: 400 }
-      );
-    }
+    // インタラクティブトランザクションで在庫チェック+更新をアトミックに実行
+    const result = await prisma.$transaction(async (tx) => {
+      // トランザクション内で最新の在庫を取得
+      const currentDrink = await tx.drink.findUniqueOrThrow({
+        where: { id: drinkId },
+      });
 
-    const [transaction, updatedDrink] = await prisma.$transaction([
-      prisma.transaction.create({
+      // 取り出し時のみ在庫チェック（トランザクション内で安全）
+      if (!isReturn && currentDrink.stock < quantity) {
+        throw new Error(`INSUFFICIENT_STOCK:${currentDrink.stock}`);
+      }
+
+      const transaction = await tx.transaction.create({
         data: {
           employeeId: payload.sub,
           drinkId,
@@ -123,29 +127,40 @@ export async function POST(request: NextRequest) {
           employee: { select: { name: true, employeeCode: true } },
           drink: { select: { name: true } },
         },
-      }),
-      prisma.drink.update({
+      });
+
+      const updatedDrink = await tx.drink.update({
         where: { id: drinkId },
         data: {
           stock: isReturn
             ? { increment: quantity }
             : { decrement: quantity },
         },
-      }),
-    ]);
+      });
+
+      return { transaction, updatedDrink };
+    });
 
     // Check low stock after takeout (non-blocking)
     if (!isReturn) {
-      checkLowStockAndNotify(drinkId, updatedDrink.stock).catch(() => {});
+      checkLowStockAndNotify(drinkId, result.updatedDrink.stock).catch(() => {});
     }
 
     return NextResponse.json(
-      { ...transaction, drink: { ...transaction.drink, stock: updatedDrink.stock } },
+      { ...result.transaction, drink: { ...result.transaction.drink, stock: result.updatedDrink.stock } },
       { status: 201 }
     );
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // 在庫不足エラーのハンドリング
+    if (error instanceof Error && error.message.startsWith("INSUFFICIENT_STOCK:")) {
+      const currentStock = parseInt(error.message.split(":")[1], 10);
+      return NextResponse.json(
+        { error: "Insufficient stock", currentStock },
+        { status: 400 }
+      );
     }
     console.error("Create transaction error:", error);
     return NextResponse.json(
