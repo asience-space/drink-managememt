@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { DrinkTile } from "@/components/drink-tile";
-import { QuantitySelector } from "@/components/quantity-selector";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthFetch } from "@/hooks/use-fetch";
 import { useToast } from "@/components/toast";
@@ -19,7 +17,7 @@ interface Drink {
 export default function DrinksPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number>(1);
   const [customerName, setCustomerName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingDrinks, setLoadingDrinks] = useState(true);
@@ -29,23 +27,19 @@ export default function DrinksPage() {
   const { showToast } = useToast();
   const router = useRouter();
 
-  // Auth check
   useEffect(() => {
     if (!isLoading && !token) {
       router.replace("/login");
     }
   }, [token, isLoading, router]);
 
-  // Fetch drinks
   useEffect(() => {
     if (!token) return;
-
     const fetchDrinks = async () => {
       try {
         const res = await authFetch("/api/drinks");
         if (res.ok) {
-          const data = await res.json();
-          setDrinks(data);
+          setDrinks(await res.json());
         }
       } catch {
         showToast("ドリンク一覧の取得に失敗しました", "error");
@@ -65,6 +59,12 @@ export default function DrinksPage() {
       setSelectedDrink(drink);
       setQuantity(1);
     }
+  };
+
+  const handleQuantityTap = (num: number) => {
+    if (!selectedDrink) return;
+    if (num > selectedDrink.stock) return;
+    setQuantity(num);
   };
 
   const handleConfirm = async () => {
@@ -114,18 +114,16 @@ export default function DrinksPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-[var(--color-card)] border-b-2 border-[var(--color-border)] px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--color-text)]">
-            ようこそ {employee?.name}さん
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
+      <header className="bg-[var(--color-card)] border-b-2 border-[var(--color-border)] px-4 py-3 flex items-center justify-between">
+        <h1 className="text-lg font-bold text-[var(--color-text)]">
+          ようこそ {employee?.name}さん
+        </h1>
+        <div className="flex items-center gap-2">
           {isAdmin && (
             <button
               type="button"
               onClick={() => router.push("/admin/dashboard")}
-              className="px-4 py-2.5 rounded-lg bg-gray-100 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-gray-200 transition-colors cursor-pointer"
+              className="px-3 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-gray-200 transition-colors cursor-pointer"
             >
               管理画面
             </button>
@@ -133,78 +131,114 @@ export default function DrinksPage() {
           <button
             type="button"
             onClick={logout}
-            className="px-4 py-2.5 rounded-lg bg-gray-100 text-sm font-medium text-[var(--color-danger)] hover:bg-red-50 transition-colors cursor-pointer"
+            className="px-3 py-2 rounded-lg bg-gray-100 text-sm font-medium text-[var(--color-danger)] hover:bg-red-50 transition-colors cursor-pointer"
           >
             ログアウト
           </button>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 p-6">
+      {/* Main: ドリンク選択（上） + 数量テンキー（下） */}
+      <main className="flex-1 flex flex-col overflow-hidden">
         {loadingDrinks ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex-1 flex items-center justify-center">
             <div className="text-[var(--color-text-secondary)]">
               ドリンクを読み込み中...
             </div>
           </div>
         ) : (
           <>
-            {/* Drink grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
-              {drinks.map((drink) => (
-                <DrinkTile
-                  key={drink.id}
-                  drink={drink}
-                  selected={selectedDrink?.id === drink.id}
-                  onClick={() => handleSelectDrink(drink)}
-                  disabled={drink.stock <= 0}
-                />
-              ))}
+            {/* ドリンク一覧（コンパクトリスト形式） */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <p className="text-xs text-[var(--color-text-secondary)] mb-2">ドリンクを選択してください</p>
+              <div className="grid grid-cols-3 gap-2">
+                {drinks.map((drink) => {
+                  const isSelected = selectedDrink?.id === drink.id;
+                  const isOut = drink.stock <= 0;
+                  return (
+                    <button
+                      key={drink.id}
+                      type="button"
+                      onClick={() => handleSelectDrink(drink)}
+                      disabled={isOut}
+                      className={`relative flex flex-col items-center justify-center rounded-xl border-2 p-3 min-h-[80px] transition-all cursor-pointer select-none ${
+                        isSelected
+                          ? "border-[var(--color-primary)] bg-blue-50 shadow-md"
+                          : "border-[var(--color-border)] bg-[var(--color-card)]"
+                      } ${isOut ? "opacity-40 cursor-not-allowed" : "active:scale-[0.97]"}`}
+                    >
+                      <span className={`text-sm font-bold text-center leading-tight ${isSelected ? "text-[var(--color-primary)]" : "text-[var(--color-text)]"}`}>
+                        {drink.name}
+                      </span>
+                      <span className={`mt-1 text-xs font-medium ${
+                        isOut ? "text-red-500" : drink.stock <= 3 ? "text-yellow-600" : "text-green-600"
+                      }`}>
+                        {isOut ? "在庫なし" : `在庫: ${drink.stock}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Selection area */}
-            {selectedDrink && (
-              <div className="fixed bottom-0 left-0 right-0 bg-[var(--color-card)] border-t-2 border-[var(--color-border)] p-6 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
-                <div className="max-w-2xl mx-auto flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-lg font-bold text-[var(--color-text)]">
-                        {selectedDrink.name}
-                      </span>
-                      <span className="ml-3 text-sm text-[var(--color-text-secondary)]">
-                        在庫: {selectedDrink.stock}
-                      </span>
-                    </div>
-                    <QuantitySelector
-                      value={quantity}
-                      onChange={setQuantity}
-                      min={1}
-                      max={selectedDrink.stock}
-                    />
-                  </div>
-
-                  {/* Customer name input */}
-                  <input
-                    type="text"
-                    placeholder="お客様名（任意）"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-border)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                  />
-
-                  {/* Confirm button */}
-                  <button
-                    type="button"
-                    onClick={handleConfirm}
-                    disabled={isSubmitting}
-                    className="w-full h-14 rounded-xl bg-[var(--color-primary)] text-white text-lg font-bold hover:bg-[var(--color-primary-hover)] active:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {isSubmitting ? "処理中..." : "確定する"}
-                  </button>
+            {/* 下部エリア: 数量テンキー + お客様名 + 確定 */}
+            <div className="bg-[var(--color-card)] border-t-2 border-[var(--color-border)] px-4 pt-3 pb-4">
+              {/* 選択中の表示 */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm">
+                  {selectedDrink ? (
+                    <span>
+                      <span className="font-bold text-[var(--color-primary)]">{selectedDrink.name}</span>
+                      <span className="text-[var(--color-text-secondary)] ml-2">× {quantity}</span>
+                    </span>
+                  ) : (
+                    <span className="text-[var(--color-text-secondary)]">ドリンクを選択してください</span>
+                  )}
                 </div>
               </div>
-            )}
+
+              {/* 数量テンキー: 1〜9を1行に */}
+              <div className="grid grid-cols-9 gap-1.5 mb-3">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => {
+                  const isOverStock = selectedDrink ? num > selectedDrink.stock : true;
+                  const isActive = quantity === num && selectedDrink !== null;
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => handleQuantityTap(num)}
+                      disabled={!selectedDrink || isOverStock}
+                      className={`h-14 rounded-xl text-xl font-bold transition-all cursor-pointer select-none ${
+                        isActive
+                          ? "bg-[var(--color-primary)] text-white shadow-md"
+                          : "bg-gray-100 text-[var(--color-text)] hover:bg-gray-200"
+                      } ${(!selectedDrink || isOverStock) ? "opacity-30 cursor-not-allowed" : "active:scale-95"}`}
+                    >
+                      {num}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* お客様名 */}
+              <input
+                type="text"
+                placeholder="お客様名（任意）"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-[var(--color-border)] text-sm focus:outline-none focus:border-[var(--color-primary)] transition-colors mb-3"
+              />
+
+              {/* 確定ボタン */}
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={!selectedDrink || isSubmitting}
+                className="w-full h-14 rounded-xl bg-[var(--color-primary)] text-white text-lg font-bold hover:bg-[var(--color-primary-hover)] active:bg-blue-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isSubmitting ? "処理中..." : "確定する"}
+              </button>
+            </div>
           </>
         )}
       </main>

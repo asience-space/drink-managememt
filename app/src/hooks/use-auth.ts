@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface Employee {
   sub: number;
@@ -30,10 +30,79 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
+const AUTO_LOGOUT_MS = 3 * 60 * 1000; // 3分間操作がなければ自動ログアウト
+
 export function useAuth() {
   const [token, setToken] = useState<string | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const lastActivityRef = useRef<number>(Date.now());
+  const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setEmployee(null);
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
+    window.location.href = "/login";
+  }, []);
+
+  // 自動ログアウトタイマーをリセット
+  const resetAutoLogoutTimer = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current);
+    }
+    const currentToken = localStorage.getItem("token");
+    if (currentToken) {
+      logoutTimerRef.current = setTimeout(() => {
+        logout();
+      }, AUTO_LOGOUT_MS);
+    }
+  }, [logout]);
+
+  // ユーザー操作を検知して自動ログアウトタイマーをリセット
+  useEffect(() => {
+    if (!token) return;
+
+    const events = ["mousedown", "touchstart", "keydown", "scroll"] as const;
+
+    const handleActivity = () => {
+      resetAutoLogoutTimer();
+    };
+
+    events.forEach((event) => {
+      document.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // 初期タイマー開始
+    resetAutoLogoutTimer();
+
+    return () => {
+      events.forEach((event) => {
+        document.removeEventListener(event, handleActivity);
+      });
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+      }
+    };
+  }, [token, resetAutoLogoutTimer]);
+
+  // トークンの期限切れを定期チェック
+  useEffect(() => {
+    if (!token) return;
+
+    const interval = setInterval(() => {
+      if (isTokenExpired(token)) {
+        logout();
+      }
+    }, 30 * 1000); // 30秒ごとにチェック
+
+    return () => clearInterval(interval);
+  }, [token, logout]);
 
   useEffect(() => {
     const stored = localStorage.getItem("token");
@@ -91,13 +160,6 @@ export function useAuth() {
     },
     []
   );
-
-  const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    setToken(null);
-    setEmployee(null);
-    window.location.href = "/login";
-  }, []);
 
   const isAdmin = employee?.role === "admin";
 
