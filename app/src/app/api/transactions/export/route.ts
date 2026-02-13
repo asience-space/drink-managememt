@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
 
     const headers = [
       "日時",
+      "種別",
       "社員番号",
       "社員名",
       "ドリンク名",
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
       new Date(t.createdAt).toLocaleString("ja-JP", {
         timeZone: "Asia/Tokyo",
       }),
+      t.type === "return" ? "返却" : "取り出し",
       t.employee.employeeCode,
       t.employee.name,
       t.drink.name,

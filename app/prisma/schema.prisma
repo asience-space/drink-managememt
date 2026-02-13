@@ -45,6 +45,7 @@ model Transaction {
   employeeId   Int      @map("employee_id")
   drinkId      Int      @map("drink_id")
   quantity     Int
+  type         String   @default("takeout") // "takeout" | "return"
   customerName String?  @map("customer_name")
   source       String   @default("manual")
   createdAt    DateTime @default(now()) @map("created_at")

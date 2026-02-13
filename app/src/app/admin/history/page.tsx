@@ -9,6 +9,7 @@ interface TransactionRow {
   id: number;
   createdAt: string;
   quantity: number;
+  type: string;
   customerName: string | null;
   employee: { name: string; employeeCode: string };
   drink: { name: string };
@@ -58,6 +59,7 @@ export default function HistoryPage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [drinkId, setDrinkId] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [inventoryChecks, setInventoryChecks] = useState<InventoryCheckRow[]>([]);
   const [inventorySessions, setInventorySessions] = useState<InventorySession[]>([]);
@@ -88,6 +90,7 @@ export default function HistoryPage() {
     if (fromDate) params.set("from", fromDate + "T00:00:00");
     if (toDate) params.set("to", toDate + "T23:59:59");
     if (drinkId) params.set("drinkId", drinkId);
+    if (typeFilter) params.set("type", typeFilter);
     params.set("page", String(page));
     params.set("limit", "50");
     return params.toString();
@@ -116,7 +119,7 @@ export default function HistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [tab, inventoryView, fromDate, toDate, drinkId, authFetch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tab, inventoryView, fromDate, toDate, drinkId, typeFilter, authFetch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { search(1); }, [tab, inventoryView]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -143,7 +146,7 @@ export default function HistoryPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4">
-        {[{ key: "transactions" as const, label: "取り出し履歴" }, { key: "inventory" as const, label: "棚卸し履歴" }].map((t) => (
+        {[{ key: "transactions" as const, label: "取り出し・返却履歴" }, { key: "inventory" as const, label: "棚卸し履歴" }].map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
@@ -196,6 +199,17 @@ export default function HistoryPage() {
             </select>
           </div>
         )}
+        {tab === "transactions" && (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">種別</label>
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">すべて</option>
+              <option value="takeout">取り出し</option>
+              <option value="return">返却</option>
+            </select>
+          </div>
+        )}
         <button onClick={() => search(1)} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">検索</button>
         <button onClick={exportCsv} className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200">CSV出力</button>
       </div>
@@ -209,6 +223,7 @@ export default function HistoryPage() {
             <thead>
               <tr className="bg-gray-50">
                 <th className="text-left p-3 border-b font-medium text-gray-600">日時</th>
+                <th className="text-left p-3 border-b font-medium text-gray-600">種別</th>
                 <th className="text-left p-3 border-b font-medium text-gray-600">社員番号</th>
                 <th className="text-left p-3 border-b font-medium text-gray-600">社員名</th>
                 <th className="text-left p-3 border-b font-medium text-gray-600">ドリンク名</th>
@@ -218,8 +233,17 @@ export default function HistoryPage() {
             </thead>
             <tbody>
               {transactions.map((t) => (
-                <tr key={t.id}>
+                <tr key={t.id} className={t.type === "return" ? "bg-orange-50" : ""}>
                   <td className="p-3 border-b text-sm">{new Date(t.createdAt).toLocaleString("ja-JP")}</td>
+                  <td className="p-3 border-b">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                      t.type === "return"
+                        ? "bg-orange-100 text-orange-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}>
+                      {t.type === "return" ? "返却" : "取り出し"}
+                    </span>
+                  </td>
                   <td className="p-3 border-b">{t.employee.employeeCode}</td>
                   <td className="p-3 border-b">{t.employee.name}</td>
                   <td className="p-3 border-b">{t.drink.name}</td>
@@ -228,7 +252,7 @@ export default function HistoryPage() {
                 </tr>
               ))}
               {transactions.length === 0 && (
-                <tr><td colSpan={6} className="p-6 text-center text-gray-400">データがありません</td></tr>
+                <tr><td colSpan={7} className="p-6 text-center text-gray-400">データがありません</td></tr>
               )}
             </tbody>
           </table>

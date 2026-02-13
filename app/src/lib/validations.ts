@@ -7,6 +7,7 @@ export const loginSchema = z.object({
 export const transactionSchema = z.object({
   drinkId: z.number().int().positive(),
   quantity: z.number().int().min(1),
+  type: z.enum(["takeout", "return"]).optional().default("takeout"),
   customerName: z.string().optional(),
 });
 

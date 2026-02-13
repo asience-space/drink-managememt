@@ -41,24 +41,36 @@ export async function GET(request: NextRequest) {
 
     const consumptionMap = new Map<
       number,
-      { drinkId: number; name: string; totalQuantity: number }
+      { drinkId: number; name: string; totalQuantity: number; returnQuantity: number }
     >();
     for (const t of todayTransactions) {
+      const isTakeout = t.type !== "return";
       const existing = consumptionMap.get(t.drinkId);
       if (existing) {
-        existing.totalQuantity += t.quantity;
+        if (isTakeout) {
+          existing.totalQuantity += t.quantity;
+        } else {
+          existing.returnQuantity += t.quantity;
+        }
       } else {
         consumptionMap.set(t.drinkId, {
           drinkId: t.drinkId,
           name: t.drink.name,
-          totalQuantity: t.quantity,
+          totalQuantity: isTakeout ? t.quantity : 0,
+          returnQuantity: isTakeout ? 0 : t.quantity,
         });
       }
     }
     const todayConsumption = Array.from(consumptionMap.values());
 
-    // Today's total
-    const todayTotal = todayTransactions.reduce((sum, t) => sum + t.quantity, 0);
+    // Today's total (net: takeout - return)
+    const todayTotal = todayTransactions.reduce(
+      (sum, t) => sum + (t.type === "return" ? -t.quantity : t.quantity),
+      0
+    );
+    const todayReturnTotal = todayTransactions
+      .filter((t) => t.type === "return")
+      .reduce((sum, t) => sum + t.quantity, 0);
 
     // Recent alerts: inventory checks from last 7 days where diff != 0
     const recentCheckRecords = await prisma.inventoryCheck.findMany({
@@ -102,6 +114,7 @@ export async function GET(request: NextRequest) {
       },
       select: {
         quantity: true,
+        type: true,
         createdAt: true,
       },
     });
@@ -119,7 +132,8 @@ export async function GET(request: NextRequest) {
 
     for (const t of weekTransactions) {
       const dateKey = new Date(t.createdAt).toISOString().slice(0, 10);
-      trendMap.set(dateKey, (trendMap.get(dateKey) || 0) + t.quantity);
+      const delta = t.type === "return" ? -t.quantity : t.quantity;
+      trendMap.set(dateKey, (trendMap.get(dateKey) || 0) + delta);
     }
 
     const weeklyTrend = Array.from(trendMap.entries())
@@ -130,6 +144,7 @@ export async function GET(request: NextRequest) {
       stockSummary,
       todayConsumption,
       todayTotal,
+      todayReturnTotal,
       recentAlerts,
       weeklyTrend,
     });

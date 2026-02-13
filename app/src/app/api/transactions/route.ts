@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const to = searchParams.get("to");
     const employeeId = searchParams.get("employeeId");
     const drinkId = searchParams.get("drinkId");
+    const type = searchParams.get("type");
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.max(
       1,
@@ -34,6 +35,10 @@ export async function GET(request: NextRequest) {
 
     if (drinkId) {
       where.drinkId = parseInt(drinkId, 10);
+    }
+
+    if (type && (type === "takeout" || type === "return")) {
+      where.type = type;
     }
 
     const [data, total] = await Promise.all([
@@ -85,7 +90,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { drinkId, quantity, customerName } = parsed.data;
+    const { drinkId, quantity, type, customerName } = parsed.data;
+    const isReturn = type === "return";
 
     const drink = await prisma.drink.findUnique({
       where: { id: drinkId },
@@ -95,7 +101,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Drink not found" }, { status: 404 });
     }
 
-    if (drink.stock < quantity) {
+    // 取り出し時のみ在庫チェック
+    if (!isReturn && drink.stock < quantity) {
       return NextResponse.json(
         { error: "Insufficient stock", currentStock: drink.stock },
         { status: 400 }
@@ -108,6 +115,7 @@ export async function POST(request: NextRequest) {
           employeeId: payload.sub,
           drinkId,
           quantity,
+          type,
           customerName,
         },
         include: {
@@ -117,7 +125,11 @@ export async function POST(request: NextRequest) {
       }),
       prisma.drink.update({
         where: { id: drinkId },
-        data: { stock: { decrement: quantity } },
+        data: {
+          stock: isReturn
+            ? { increment: quantity }
+            : { decrement: quantity },
+        },
       }),
     ]);
 
