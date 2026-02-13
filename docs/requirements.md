@@ -197,7 +197,8 @@
 | stock_entries        | id, employee_id, drink_id, quantity, created_at                                     | SERIAL, FK, FK, INT, TIMESTAMP                 | 入庫記録                              |
 | settings             | key, value                                                                          | VARCHAR, TEXT                                  | 通知先、棚卸しスケジュール等                    |
 | 【将来】sensor_readings | id, sensor_id, drink_id, weight, estimated_count, created_at                        | SERIAL, VARCHAR, FK, DECIMAL, INT, TIMESTAMP   | 重量センサーの生データ                       |
-| 【将来】ic_card_logs    | id, card_id, employee_id, action, created_at                                        | SERIAL, VARCHAR, FK, ENUM, TIMESTAMP           | ICカード開錠ログ                         |
+| 【将来】lock_logs       | id, timestamp, mode, idm_hash, employee_id, unlock_permitted, transaction_id        | SERIAL, TIMESTAMP, TEXT, TEXT, FK, BOOLEAN, FK  | 電子錠解錠ログ（[詳細](./requirements-lock.md#5-データモデル)） |
+| 【将来】registered_cards | id, idm_hash, employee_id, is_active, created_at                                    | SERIAL, TEXT, FK, BOOLEAN, TIMESTAMP            | 登録制限モード用カード（[詳細](./requirements-lock.md#5-データモデル)） |
 
 ### 6.1 将来拡張を考慮した設計指針
 
@@ -241,12 +242,13 @@
 1. 補充するドリンク種類・数量を入力
 1. 在庫数が自動更新される
 
-### 7.5 【将来対応】ICカード電子錠との連携
+### 7.5 【将来対応】FeliCa電子錠との連携
 
-- ICカード対応電子錠を別途導入し、本アプリと連携予定
-- アプリで記録完了後にICカードで開錠を許可する仕組みを構築
-- ICカードの開錠ログとアプリの取り出し記録を突合し、不整合を検知
-- 導入時期・仕様は電子錠の選定後に別途定義する
+- FeliCaリーダー付き電子錠を冷蔵庫に導入し、本アプリと連携予定
+- アプリで記録完了後にFeliCaタッチで解錠を許可する仕組みを構築
+- 3モード運用（オープン/調査/登録制限）で段階的なセキュリティ強化が可能
+- 解錠ログとアプリの取り出し記録を突合し、不整合を検知
+- 詳細は [FeliCa電子錠連携 要件定義書](./requirements-lock.md) を参照
 
 ### 7.6 【将来対応】重量センサーによる自動在庫管理
 
@@ -294,14 +296,16 @@
 - 在庫ダッシュボード・差分アラート
 - 社員番号認証（パスワード不要）・権限管理
 
-### Phase 2：ICカード対応電子錠連携
+### Phase 2：FeliCa電子錠連携
 
-ICカード対応の電子錠を冷蔵庫に導入し、アプリと連携する。
+FeliCaリーダー付き電子錠を冷蔵庫に導入し、アプリと連携する。
 
 - 対象機能：F-03（ICカード連携）、F-11（ICカード認証ログ）
-- アプリで記録完了 → ICカードで開錠許可のフローを構築
-- 開錠ログとアプリ記録の自動突合
-- 前提：電子錠のAPI仕様が公開されていること、電源・ネットワーク環境の整備
+- アプリで記録完了 → FeliCaタッチで解錠許可のフローを構築
+- 3モード運用：オープンモード（通常）、調査モード（不正検知時）、登録制限モード（エスカレーション）
+- Raspberry Pi等のコントローラーを介した制御、REST APIによる通信
+- 前提：電子錠の到着、電源・ネットワーク環境の整備
+- **詳細要件：[FeliCa電子錠連携 要件定義書](./requirements-lock.md) を参照**
 
 ### Phase 3：重量センサー連携
 
