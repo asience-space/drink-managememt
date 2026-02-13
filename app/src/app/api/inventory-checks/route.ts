@@ -78,7 +78,6 @@ export async function POST(request: NextRequest) {
 
     const { checks } = parsed.data;
 
-    // Get current stock for each drink
     const drinkIds = checks.map((c) => c.drinkId);
     const drinks = await prisma.drink.findMany({
       where: { id: { in: drinkIds } },
@@ -86,7 +85,6 @@ export async function POST(request: NextRequest) {
 
     const drinkMap = new Map(drinks.map((d) => [d.id, d]));
 
-    // Build inventory check records
     const checkRecords = checks.map((c) => {
       const drink = drinkMap.get(c.drinkId);
       const systemStock = drink?.stock ?? 0;
@@ -101,17 +99,30 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Create all checks in a transaction
-    const createdChecks = await prisma.$transaction(
-      checkRecords.map((record) =>
-        prisma.inventoryCheck.create({
+    // トランザクションで棚卸し記録の作成 + 在庫の更新を同時に行う
+    const createdChecks = await prisma.$transaction(async (tx) => {
+      // 棚卸し記録を作成
+      const created = [];
+      for (const record of checkRecords) {
+        const check = await tx.inventoryCheck.create({
           data: record,
           include: {
             drink: { select: { name: true } },
           },
-        })
-      )
-    );
+        });
+        created.push(check);
+      }
+
+      // 実在庫に合わせてドリンクの在庫数を更新
+      for (const c of checks) {
+        await tx.drink.update({
+          where: { id: c.drinkId },
+          data: { stock: c.actualStock },
+        });
+      }
+
+      return created;
+    });
 
     const hasDiff = createdChecks.some((c) => c.diff !== 0);
 
@@ -136,6 +147,7 @@ export async function POST(request: NextRequest) {
         checks: createdChecks,
         hasDiff,
         notificationSent,
+        stockUpdated: true,
       },
       { status: 201 }
     );
