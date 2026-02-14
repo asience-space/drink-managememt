@@ -423,7 +423,7 @@ iPad（ブラウザ）           Raspberry Pi（アプリ + PaSoRi + GPIO）
 - 電子錠が届くまで、電子錠連携の機能実装は一切行わない
 - IDm（FeliCa製造番号）を平文でDBに保存しない（必ずSHA-256等でハッシュ化）
 - 電子錠のハードウェア仕様が未確定のため、GPIO制御の詳細はPhase 2開始時に策定する
-- Phase 2導入時、アプリのデプロイ先をAWS Lightsail → Raspberry Piに移行する可能性がある（iPad向けWebアプリをPiからホスティング）
+- Phase 2導入時、アプリのデプロイ先をAWS Lightsail → Raspberry Piに移行する（iPad向けWebアプリをPiからホスティング）
 
 ---
 
