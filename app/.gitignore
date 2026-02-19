@@ -48,6 +48,14 @@ prisma/dev.db
 prisma/test.db
 dev.db
 
+# pwa
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map
+/public/swe-worker-*.js
+/public/fallback-*.js
+
 # uploads
 /public/uploads/drinks/*
 !/public/uploads/drinks/.gitkeep
