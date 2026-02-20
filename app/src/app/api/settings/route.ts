@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireAuth } from "@/lib/auth";
+
+// 一般ユーザーにも公開可能な設定キー
+const PUBLIC_SETTINGS = ["default_drink_id"];
 
 export async function GET(request: NextRequest) {
   try {
-    requireAdmin(request);
+    // 認証チェック（ログイン済みであること）
+    const employee = await requireAuth(request);
 
     const settings = await prisma.setting.findMany();
 
     const settingsObject: Record<string, string> = {};
     for (const s of settings) {
-      settingsObject[s.key] = s.value;
+      // 管理者の場合はすべての設定を返す
+      // 一般ユーザーの場合は公開設定のみ返す
+      if (employee.role === "admin" || PUBLIC_SETTINGS.includes(s.key)) {
+        settingsObject[s.key] = s.value;
+      }
     }
 
     return NextResponse.json(settingsObject);
