@@ -64,6 +64,12 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   /* config options here */
+  compiler: {
+    // iOS 12 (Safari 12) 対応のため、ES2019以前にトランスパイル
+    // Optional chaining (?.), Nullish coalescing (??) などをサポートしないブラウザに対応
+  },
+  // レガシーブラウザサポートを有効化
+  transpilePackages: [],
 };
 
 export default withPWA(nextConfig);
