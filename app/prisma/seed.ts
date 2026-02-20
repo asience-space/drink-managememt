@@ -40,6 +40,7 @@ async function main() {
     { key: "lockout_max_attempts", value: "3" },
     { key: "session_timeout_minutes", value: "30" },
     { key: "low_stock_threshold", value: "3" },
+    { key: "default_drink_id", value: "" },
   ];
 
   for (const setting of settings) {

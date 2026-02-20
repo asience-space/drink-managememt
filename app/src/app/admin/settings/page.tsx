@@ -9,6 +9,13 @@ interface SettingField {
   placeholder?: string;
 }
 
+interface Drink {
+  id: number;
+  name: string;
+  stock: number;
+  sortOrder: number;
+}
+
 const fields: SettingField[] = [
   { key: "notification_webhook_url", label: "Google Chat Webhook URL", type: "text", placeholder: "https://chat.googleapis.com/v1/spaces/..." },
   { key: "low_stock_threshold", label: "在庫低下通知閾値（本）", type: "number", placeholder: "3" },
@@ -20,6 +27,7 @@ const fields: SettingField[] = [
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
+  const [drinks, setDrinks] = useState<Drink[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -40,6 +48,11 @@ export default function SettingsPage() {
   useEffect(() => {
     authFetch("/api/settings").then(async (res) => {
       setSettings(await res.json());
+    });
+    authFetch("/api/drinks?active=false").then(async (res) => {
+      if (res.ok) {
+        setDrinks(await res.json());
+      }
     });
   }, [authFetch]);
 
@@ -72,6 +85,29 @@ export default function SettingsPage() {
 
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="space-y-6">
+          {/* デフォルトドリンク選択 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              デフォルトドリンク
+              <span className="text-xs text-gray-500 ml-2">（ログイン時に自動選択）</span>
+            </label>
+            <select
+              value={settings.default_drink_id || ""}
+              onChange={(e) => setSettings({ ...settings, default_drink_id: e.target.value })}
+              className="border border-gray-300 rounded-lg px-3 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">なし（自動選択しない）</option>
+              {drinks
+                .filter((d) => d.stock > 0)
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((drink) => (
+                  <option key={drink.id} value={drink.id}>
+                    {drink.name} （在庫: {drink.stock}）
+                  </option>
+                ))}
+            </select>
+          </div>
+
           {fields.map((field) => (
             <div key={field.key}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>

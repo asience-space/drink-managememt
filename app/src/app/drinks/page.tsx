@@ -40,19 +40,45 @@ export default function DrinksPage() {
 
   useEffect(() => {
     if (!token) return;
-    const fetchDrinks = async () => {
+    const fetchDrinksAndSettings = async () => {
       try {
-        const res = await authFetch("/api/drinks");
-        if (res.ok) {
-          setDrinks(await res.json());
+        // ドリンク一覧を取得
+        const drinksRes = await authFetch("/api/drinks");
+        if (!drinksRes.ok) {
+          throw new Error("ドリンク一覧の取得に失敗しました");
         }
-      } catch {
-        showToast("ドリンク一覧の取得に失敗しました", "error");
+        const drinksData: Drink[] = await drinksRes.json();
+        setDrinks(drinksData);
+
+        // 設定を取得してデフォルトドリンクを自動選択
+        const settingsRes = await authFetch("/api/settings");
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          const defaultDrinkId = settingsData.default_drink_id;
+
+          if (defaultDrinkId) {
+            const defaultDrink = drinksData.find(
+              (d) => d.id === parseInt(defaultDrinkId, 10)
+            );
+            // デフォルトドリンクが存在し、在庫がある場合のみ自動選択
+            if (defaultDrink && defaultDrink.stock > 0) {
+              setSelectedDrink(defaultDrink);
+              setQuantity(1);
+            }
+          }
+        }
+      } catch (error) {
+        showToast(
+          error instanceof Error
+            ? error.message
+            : "ドリンク一覧の取得に失敗しました",
+          "error"
+        );
       } finally {
         setLoadingDrinks(false);
       }
     };
-    fetchDrinks();
+    fetchDrinksAndSettings();
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleModeChange = (newMode: Mode) => {
