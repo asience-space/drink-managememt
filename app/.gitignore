@@ -46,6 +46,7 @@ next-env.d.ts
 /src/generated/prisma
 prisma/dev.db
 prisma/test.db
+prisma/prod.db
 dev.db
 
 # pwa
