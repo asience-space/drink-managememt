@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/toast";
+import { PolyfillLoader } from "@/components/polyfill-loader";
 
 export const metadata: Metadata = {
   title: "ドリンク在庫管理",
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className="antialiased">
+        <PolyfillLoader />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
