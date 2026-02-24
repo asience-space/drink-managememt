@@ -26,6 +26,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@csstools/postcss-cascade-layers": "^6.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.33",
