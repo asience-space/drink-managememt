@@ -13,8 +13,22 @@
   --color-text-secondary: #64748b;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: system-ui, -apple-system, sans-serif;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+.overflow-y-auto,
+.overflow-auto,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
 }

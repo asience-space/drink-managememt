@@ -47,7 +47,7 @@ export function DrinkTile({ drink, selected, onClick, disabled }: DrinkTileProps
     >
       {/* Image or placeholder */}
       <div
-        className={`w-full aspect-square rounded-lg flex items-center justify-center overflow-hidden mb-2 ${
+        className={`w-full aspect-square min-h-[5rem] rounded-lg flex items-center justify-center overflow-hidden mb-2 ${
           drink.imageUrl ? "" : colorClass
         }`}
       >
