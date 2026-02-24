@@ -64,8 +64,16 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   // レガシーブラウザサポートを有効化
-  // @ducanh2912/next-pwa を含めることで optional chaining (?.) 等を iOS 12 向けにトランスパイル
-  transpilePackages: ['@ducanh2912/next-pwa'],
+  // recharts とその依存パッケージ (optional chaining を使用) を iOS 12 向けにトランスパイル
+  transpilePackages: [
+    '@ducanh2912/next-pwa',
+    'recharts',
+    '@reduxjs/toolkit',
+    'es-toolkit',
+    'immer',
+    'react-redux',
+    'reselect',
+  ],
 };
 
 export default withPWA(nextConfig);

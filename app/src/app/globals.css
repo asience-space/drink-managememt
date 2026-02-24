@@ -25,6 +25,7 @@ body {
   overflow: hidden;
   position: fixed;
   width: 100%;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .overflow-y-auto,
